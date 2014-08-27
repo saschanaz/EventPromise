@@ -20,7 +20,7 @@ declare module EventPromise {
 ```javascript
 // One-time click listener
 EventPromise.waitEvent(window, "click")
-  .then(function () { console.log("First click") });
+  .then(function () { alert("First click") });
 
 // Promise-izing XHR
 function xhr(method, url) {
@@ -32,7 +32,7 @@ function xhr(method, url) {
 }
 
 // Normal event subscription
-EventPromise.subscribeEvent(window, "resize", function () { console.log("Window is resized") });
+EventPromise.subscribeEvent(window, "resize", function () { alert("Window is resized") });
 
 // Ceasing subscripton
 EventPromise.subscribeEvent(window, "resize",
@@ -58,7 +58,7 @@ EventPromise.subscribeEvent(window, "keydown",
 
 // Chaining event listeners
 EventPromise.waitEvent(window, "click")
-  .then(function () { return EventPromise.waitEvent(window, "keydown") })
-  .then(function () { return EventPromise.waitEvent(window, "deviceorientation") })
+  .then(function () { alert("Just cleared level 1"); return EventPromise.waitEvent(window, "keydown") })
+  .then(function () { alert("Just cleared level 2"); return EventPromise.waitEvent(window, "scroll") })
   .then(function () { alert("Chain event completed") });
 ```
