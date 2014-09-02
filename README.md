@@ -5,17 +5,22 @@ EventPromise
 
 ```typescript
 declare module EventPromise {
-    function waitEvent<T extends Event>(target: EventTarget, eventName: string): Promise<T>;
-    function subscribeEvent<T extends Event>(
-        target: EventTarget, 
-        eventName: string, 
-        listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
-	
-    interface EventSubscription {
-        cease(): void;
-        cessation: Promise<void>;
-    }
+  function waitEvent<T extends Event>(target: EventTarget, eventName: string): Promise<T>;
+  function subscribeEvent<T extends Event>(
+    target: EventTarget,
+    eventName: string,
+    listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
+  
+  interface EventSubscription {
+    cease(options?: EventCessationOptions): void;
+    cessation: Promise<void>;
+  }
+  interface EventCessationOptions {
+    silently?: boolean;
+    error?: any;
+  }
 }
+
 
 ```
 
@@ -41,9 +46,9 @@ EventPromise.subscribeEvent(window, "resize", function () { alert("Window is res
 // Ceasing subscripton
 EventPromise.subscribeEvent(window, "resize",
   function (ev, subscription) {
-    console.log("Window is resized");
-    if (window.innerWidth > 640)
-      subscription.cease();
+  console.log("Window is resized");
+  if (window.innerWidth > 640)
+    subscription.cease();
   });
 
 // External ceasing
@@ -53,10 +58,10 @@ EventPromise.waitEvent(window, "scroll").then(function () { subscription.cease()
 // Waiting subscription cessation
 EventPromise.subscribeEvent(window, "keydown",
   function (ev, subscription) {
-    if (ev.key !== 'p')
-      alert("Please press 'P'");
-    else
-      subscription.cease();
+  if (ev.key !== 'p')
+    alert("Please press 'P'");
+  else
+    subscription.cease();
   })
   .cessation.then(function () { alert("You pressed P. Thanks. Test end.") });
 

@@ -13,14 +13,22 @@
 
     function subscribeEvent(target, eventName, listener) {
         var oncessation;
+        var onerror;
         var subscription = {
-            cease: function () {
+            cease: function (options) {
+                if (typeof options === "undefined") { options = {}; }
                 target.removeEventListener(eventName, eventListener);
-                oncessation();
+                if (options.error)
+                    onerror(options.error);
+                else if (!options.silently)
+                    oncessation();
             },
             cessation: new Promise(function (resolve, reject) {
                 oncessation = function () {
-                    resolve(undefined);
+                    return resolve();
+                };
+                onerror = function (error) {
+                    return reject(error);
                 };
             })
         };
