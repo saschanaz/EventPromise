@@ -9,7 +9,8 @@ declare module EventPromise {
   function subscribeEvent<T extends Event>(
     target: EventTarget,
     eventName: string,
-    listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
+    listener: (ev: T, subscription: EventSubscription) => any
+  ): EventSubscription;
   
   interface EventSubscription {
     cease(options?: EventCessationOptions): void;
