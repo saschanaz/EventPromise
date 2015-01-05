@@ -39,35 +39,49 @@ var EventPromise;
         return base.subscription;
     }
     EventPromise.subscribeEvent = subscribeEvent;
+    function subscribeBlank() {
+        var subscription = createChainableBase();
+        subscription.cease = function (options) {
+        };
+        subscription.cessation = Promise.resolve();
+        return subscription;
+    }
+    EventPromise.subscribeBlank = subscribeBlank;
     function createSubscriptionBase(target, eventName, listener) {
         var oncessation;
         var onerror;
-        var subscription = {
-            cease: function (options) {
-                if (options === void 0) { options = {}; }
-                if (subscription.previous)
-                    subscription.previous.cease({ silently: true });
-                target.removeEventListener(eventName, eventListener);
-                if (options.error)
-                    onerror(options.error);
-                else if (!options.silently)
-                    oncessation();
-            },
-            cessation: new Promise(function (resolve, reject) {
-                oncessation = function () { return resolve(); };
-                onerror = function (error) { return reject(error); };
-            }),
-            chain: function (target, eventName, listener) {
-                var chained = createSubscriptionBase(target, eventName, listener);
-                subscription.cessation.then(function () { return target.addEventListener(eventName, chained.eventListener); });
-                chained.subscription.previous = subscription;
-                return chained.subscription;
-            }
+        var subscription = createChainableBase();
+        subscription.cease = function (options) {
+            if (options === void 0) { options = {}; }
+            if (subscription.previous)
+                subscription.previous.cease({ silently: true });
+            target.removeEventListener(eventName, eventListener);
+            if (options.error)
+                onerror(options.error);
+            else if (!options.silently)
+                oncessation();
         };
+        subscription.cessation = new Promise(function (resolve, reject) {
+            oncessation = function () { return resolve(); };
+            onerror = function (error) { return reject(error); };
+        });
         var eventListener = function (event) {
             listener.call(target, event, subscription);
         };
         return { subscription: subscription, eventListener: eventListener };
+    }
+    function createChainableBase() {
+        var chainable = {
+            cease: null,
+            cessation: null,
+            chain: function (target, eventName, listener) {
+                var chained = createSubscriptionBase(target, eventName, listener);
+                chainable.cessation.then(function () { return target.addEventListener(eventName, chained.eventListener); });
+                chained.subscription.previous = chainable;
+                return chained.subscription;
+            }
+        };
+        return chainable;
     }
 })(EventPromise || (EventPromise = {}));
 //# sourceMappingURL=eventpromise.js.map

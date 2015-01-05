@@ -40,48 +40,48 @@ module EventPromise {
     }
 
     export function subscribeBlank() {
-        var subscription: EventSubscription = {
-            cease(options: EventCessationOptions) { },
-            cessation: Promise.resolve(),
-            chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any): EventSubscription {
-                var chained = createSubscriptionBase(target, eventName, listener);
-                subscription.cessation.then(() => target.addEventListener(eventName, chained.eventListener));
-                chained.subscription.previous = subscription;
-                return chained.subscription;
-            }
-        };
+        var subscription = createChainableBase();
+        subscription.cease = (options: EventCessationOptions) => { };
+        subscription.cessation = Promise.resolve();
         return subscription;
     }
 
     function createSubscriptionBase<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
         var oncessation: () => void;
         var onerror: (error: any) => void;
-        var subscription: EventSubscription = {
-            cease(options: EventCessationOptions = {}) {
-                if (subscription.previous)
-                    subscription.previous.cease({ silently: true });
-                target.removeEventListener(eventName, eventListener);
-                if (options.error)
-                    onerror(options.error);
-                else if (!options.silently)
-                    oncessation();
-            },
-            cessation: new Promise<void>((resolve, reject) => {
-                oncessation = () => resolve();
-                onerror = (error) => reject(error);
-            }),
-            chain<T2 extends Event>(target: EventTarget, eventName: string, listener: (ev: T2, subscription: EventSubscription) => any) {
-                var chained = createSubscriptionBase(target, eventName, listener);
-                subscription.cessation.then(() => target.addEventListener(eventName, chained.eventListener));
-                chained.subscription.previous = subscription;
-                return chained.subscription;
-            }
+        var subscription = createChainableBase();
+        subscription.cease = (options: EventCessationOptions = {}) => {
+            if (subscription.previous)
+                subscription.previous.cease({ silently: true });
+            target.removeEventListener(eventName, eventListener);
+            if (options.error)
+                onerror(options.error);
+            else if (!options.silently)
+                oncessation();
         };
+        subscription.cessation = new Promise<void>((resolve, reject) => {
+            oncessation = () => resolve();
+            onerror = (error) => reject(error);
+        });
 
         var eventListener = (event: T) => {
             listener.call(target, event, subscription);
         };
         return { subscription, eventListener };
+    }
+
+    function createChainableBase(): EventSubscription {
+        var chainable: EventSubscription = {
+            cease: null,
+            cessation: null,
+            chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
+                var chained = createSubscriptionBase(target, eventName, listener);
+                chainable.cessation.then(() => target.addEventListener(eventName, chained.eventListener));
+                chained.subscription.previous = chainable;
+                return chained.subscription;
+            }
+        };
+        return chainable;
     }
 
     export interface EventSubscription {
