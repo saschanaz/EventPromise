@@ -38,6 +38,8 @@ module EventPromise {
         var onerror: (error: any) => void;
         var subscription: EventSubscription = {
             cease(options: EventCessationOptions = {}) {
+                if (subscription.previous)
+                    subscription.previous.cease({ silently: true });
                 target.removeEventListener(eventName, eventListener);
                 if (options.error)
                     onerror(options.error);
@@ -47,7 +49,12 @@ module EventPromise {
             cessation: new Promise<void>((resolve, reject) => {
                 oncessation = () => resolve();
                 onerror = (error) => reject(error);
-            })
+            }),
+            chain<T2 extends Event>(target: EventTarget, eventName: string, listener: (ev: T2, subscription: EventSubscription) => any) {
+                var chained = subscribeEvent(target, eventName, listener);
+                chained.previous = subscription;
+                return chained;
+            }
         };
 
         var eventListener = (event: T) => {
@@ -58,8 +65,10 @@ module EventPromise {
     }
 
     export interface EventSubscription {
+        previous?: EventSubscription;
         cease(options?: EventCessationOptions): void;
-        cessation: Promise<void>
+        cessation: Promise<void>;
+        chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
     }
 
     export interface EventCessationOptions {

@@ -39,6 +39,8 @@ var EventPromise;
         var subscription = {
             cease: function (options) {
                 if (options === void 0) { options = {}; }
+                if (subscription.previous)
+                    subscription.previous.cease({ silently: true });
                 target.removeEventListener(eventName, eventListener);
                 if (options.error)
                     onerror(options.error);
@@ -48,7 +50,12 @@ var EventPromise;
             cessation: new Promise(function (resolve, reject) {
                 oncessation = function () { return resolve(); };
                 onerror = function (error) { return reject(error); };
-            })
+            }),
+            chain: function (target, eventName, listener) {
+                var chained = subscribeEvent(target, eventName, listener);
+                chained.previous = subscription;
+                return chained;
+            }
         };
         var eventListener = function (event) {
             listener.call(target, event, subscription);
