@@ -34,6 +34,12 @@ var EventPromise;
     }
     EventPromise.waitEvent = waitEvent;
     function subscribeEvent(target, eventName, listener) {
+        var base = createSubscriptionBase(target, eventName, listener);
+        target.addEventListener(eventName, base.eventListener);
+        return base.subscription;
+    }
+    EventPromise.subscribeEvent = subscribeEvent;
+    function createSubscriptionBase(target, eventName, listener) {
         var oncessation;
         var onerror;
         var subscription = {
@@ -52,17 +58,16 @@ var EventPromise;
                 onerror = function (error) { return reject(error); };
             }),
             chain: function (target, eventName, listener) {
-                var chained = subscribeEvent(target, eventName, listener);
-                chained.previous = subscription;
-                return chained;
+                var chained = createSubscriptionBase(target, eventName, listener);
+                subscription.cessation.then(function () { return target.addEventListener(eventName, chained.eventListener); });
+                chained.subscription.previous = subscription;
+                return chained.subscription;
             }
         };
         var eventListener = function (event) {
             listener.call(target, event, subscription);
         };
-        target.addEventListener(eventName, eventListener);
-        return subscription;
+        return { subscription: subscription, eventListener: eventListener };
     }
-    EventPromise.subscribeEvent = subscribeEvent;
 })(EventPromise || (EventPromise = {}));
 //# sourceMappingURL=eventpromise.js.map

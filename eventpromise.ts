@@ -34,6 +34,12 @@ module EventPromise {
     }
 
     export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
+        var base = createSubscriptionBase(target, eventName, listener);
+        target.addEventListener(eventName, base.eventListener);
+        return base.subscription;
+    }
+
+    function createSubscriptionBase<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
         var oncessation: () => void;
         var onerror: (error: any) => void;
         var subscription: EventSubscription = {
@@ -51,17 +57,17 @@ module EventPromise {
                 onerror = (error) => reject(error);
             }),
             chain<T2 extends Event>(target: EventTarget, eventName: string, listener: (ev: T2, subscription: EventSubscription) => any) {
-                var chained = subscribeEvent(target, eventName, listener);
-                chained.previous = subscription;
-                return chained;
+                var chained = createSubscriptionBase(target, eventName, listener);
+                subscription.cessation.then(() => target.addEventListener(eventName, chained.eventListener));
+                chained.subscription.previous = subscription;
+                return chained.subscription;
             }
         };
 
         var eventListener = (event: T) => {
             listener.call(target, event, subscription);
         };
-        target.addEventListener(eventName, eventListener);
-        return subscription;
+        return { subscription, eventListener };
     }
 
     export interface EventSubscription {
