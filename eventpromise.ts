@@ -39,6 +39,20 @@ module EventPromise {
         return base.subscription;
     }
 
+    export function subscribeBlank() {
+        var subscription: EventSubscription = {
+            cease(options: EventCessationOptions) { },
+            cessation: Promise.resolve(),
+            chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any): EventSubscription {
+                var chained = createSubscriptionBase(target, eventName, listener);
+                subscription.cessation.then(() => target.addEventListener(eventName, chained.eventListener));
+                chained.subscription.previous = subscription;
+                return chained.subscription;
+            }
+        };
+        return subscription;
+    }
+
     function createSubscriptionBase<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
         var oncessation: () => void;
         var onerror: (error: any) => void;
