@@ -78,7 +78,7 @@ var subscription = EventPromise.subscribeEvent(window, "click", function () { al
 EventPromise.waitEvent(window, "scroll").then(function () { subscription.cease() });
 ```
 
-##### Waiting subscription cessation
+### Waiting subscription cessation
 
 ```javascript
 EventPromise.subscribeEvent(window, "keydown",
