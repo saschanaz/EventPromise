@@ -1,7 +1,7 @@
 EventPromise
 ============
 
-Listen events more easily with promises.
+Listen events more easily with Promises.
 
 # API
 
