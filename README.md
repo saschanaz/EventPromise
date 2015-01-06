@@ -1,7 +1,7 @@
 EventPromise
 ============
 
-# API
+### API
 
 ```typescript
 declare module EventPromise {
@@ -25,16 +25,16 @@ declare module EventPromise {
 
 ```
 
-# Example
+### Example
 
-One-time click listener
+##### One-time click listener
 
 ```javascript
 EventPromise.waitEvent(window, "click")
   .then(function () { alert("First click") });
 ```
 
-Promise-izing XHR
+##### Promise-izing XHR
 
 ```javascript
 function xhr(method, url) {
@@ -46,13 +46,13 @@ function xhr(method, url) {
 }
 ```
 
-Normal event subscription
+##### Normal event subscription
 
 ```javascript
 EventPromise.subscribeEvent(window, "resize", function () { alert("Window is resized") });
 ```
 
-Ceasing subscripton
+##### Ceasing subscripton
 
 ```javascript
 EventPromise.subscribeEvent(window, "resize",
@@ -63,14 +63,14 @@ EventPromise.subscribeEvent(window, "resize",
   });
 ```
 
-External ceasing
+##### External ceasing
 
 ```javascript
 var subscription = EventPromise.subscribeEvent(window, "click", function () { alert("Clicked") });
 EventPromise.waitEvent(window, "scroll").then(function () { subscription.cease() });
 ```
 
-Waiting subscription cessation
+##### Waiting subscription cessation
 
 ```javascript
 EventPromise.subscribeEvent(window, "keydown",
@@ -83,7 +83,7 @@ EventPromise.subscribeEvent(window, "keydown",
   .cessation.then(function () { alert("You pressed P. Thanks. Test end.") });
 ```
 
-Chaining event listeners
+##### Chaining event listeners
 
 ```javascript
 EventPromise.waitEvent(window, "click")
