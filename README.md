@@ -13,10 +13,16 @@ declare module EventPromise {
     eventName: string,
     listener: (ev: T, subscription: EventSubscription) => any
   ): EventSubscription;
+  function subscribeBlank(): EventSubscription;
 
   interface EventSubscription {
     cease(options?: EventCessationOptions): void;
     cessation: Promise<void>;
+    chain<T extends Event>(
+      target: EventTarget,
+      eventName: string,
+      listener: (ev: T, subscription: EventSubscription) => any
+    ): EventSubscription;
   }
   interface EventCessationOptions {
     silently?: boolean;
@@ -111,4 +117,32 @@ var chains = EventPromise.subscribeEvent(window, "keydown", function (ev, subscr
 
 // Ceasing chained subscriptions at once
 EventPromise.waitEvent(window, "click").then(function () { chains.cease() });
+```
+
+##### Infinite chain
+
+```javascript
+var chained = EventPromise.subscribeBlank();
+
+var repeat = function () {
+  chained = chained.chain(window, "keydown", function (ev, subscription) {
+    if (ev.key === "x")
+      subscription.cease();
+    console.log("First " + ev.key);
+  }).chain(window, "keydown", function (ev, subscription) {
+    if (ev.key === "y")
+      subscription.cease();
+    console.log("Second " + ev.key);
+  }).chain(window, "keydown", function (ev, subscription) {
+    if (ev.key === "z") {
+      subscription.cease();
+      
+      /* infinite chaining! */
+      repeat();
+    }
+    console.log("Third " + ev.key);
+  });
+}
+
+repeat();
 ```
