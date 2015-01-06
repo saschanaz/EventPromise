@@ -65,9 +65,9 @@ EventPromise.subscribeEvent(window, "resize", function () { alert("Window is res
 ```javascript
 EventPromise.subscribeEvent(window, "resize",
   function (ev, subscription) {
-  console.log("Window is resized");
-  if (window.innerWidth > 640)
-    subscription.cease();
+    console.log("Window is resized");
+    if (window.innerWidth > 640)
+      subscription.cease();
   });
 ```
 
