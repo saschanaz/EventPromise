@@ -1,7 +1,9 @@
 EventPromise
 ============
 
-### API
+Listen events more easily with promises.
+
+# API
 
 ```typescript
 declare module EventPromise {
@@ -25,16 +27,16 @@ declare module EventPromise {
 
 ```
 
-### Example
+# Example
 
-##### One-time click listener
+### One-time click listener
 
 ```javascript
 EventPromise.waitEvent(window, "click")
   .then(function () { alert("First click") });
 ```
 
-##### Promise-izing XHR
+### Promise-izing XHR
 
 ```javascript
 function xhr(method, url) {
@@ -46,13 +48,13 @@ function xhr(method, url) {
 }
 ```
 
-##### Normal event subscription
+### Normal event subscription
 
 ```javascript
 EventPromise.subscribeEvent(window, "resize", function () { alert("Window is resized") });
 ```
 
-##### Ceasing subscripton
+### Ceasing subscripton
 
 ```javascript
 EventPromise.subscribeEvent(window, "resize",
@@ -63,7 +65,7 @@ EventPromise.subscribeEvent(window, "resize",
   });
 ```
 
-##### External ceasing
+### External ceasing
 
 ```javascript
 var subscription = EventPromise.subscribeEvent(window, "click", function () { alert("Clicked") });
@@ -83,11 +85,30 @@ EventPromise.subscribeEvent(window, "keydown",
   .cessation.then(function () { alert("You pressed P. Thanks. Test end.") });
 ```
 
-##### Chaining event listeners
+### Chaining event listeners
+
+##### Using waitEvent
 
 ```javascript
 EventPromise.waitEvent(window, "click")
   .then(function () { alert("Just cleared level 1"); return EventPromise.waitEvent(window, "keydown") })
   .then(function () { alert("Just cleared level 2"); return EventPromise.waitEvent(window, "scroll") })
   .then(function () { alert("Chain event completed") });
+```
+
+##### Using EventSubscription.chain
+
+```javascript
+var chains = EventPromise.subscribeEvent(window, "keydown", function (ev, subscription) {
+  if (ev.key === "x")
+    subscription.cease();
+  console.log("First " + ev.key);
+}).chain(window, "keydown", function (ev, subscription) {
+  if (ev.key === "y")
+    subscription.cease();
+  console.log("Second " + ev.key);
+});
+
+// Ceasing chained subscriptions at once
+EventPromise.waitEvent(window, "click").then(function () { chains.cease() });
 ```
