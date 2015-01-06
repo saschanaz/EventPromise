@@ -11,7 +11,7 @@ declare module EventPromise {
     eventName: string,
     listener: (ev: T, subscription: EventSubscription) => any
   ): EventSubscription;
-  
+
   interface EventSubscription {
     cease(options?: EventCessationOptions): void;
     cessation: Promise<void>;
@@ -27,12 +27,16 @@ declare module EventPromise {
 
 # Example
 
+One-time click listener
+
 ```javascript
-// One-time click listener
 EventPromise.waitEvent(window, "click")
   .then(function () { alert("First click") });
+```
 
-// Promise-izing XHR
+Promise-izing XHR
+
+```javascript
 function xhr(method, url) {
   var request = new XMLHttpRequest();
   request.open(method, url)
@@ -40,23 +44,35 @@ function xhr(method, url) {
   request.send();
   return promise;
 }
+```
 
-// Normal event subscription
+Normal event subscription
+
+```javascript
 EventPromise.subscribeEvent(window, "resize", function () { alert("Window is resized") });
+```
 
-// Ceasing subscripton
+Ceasing subscripton
+
+```javascript
 EventPromise.subscribeEvent(window, "resize",
   function (ev, subscription) {
   console.log("Window is resized");
   if (window.innerWidth > 640)
     subscription.cease();
   });
+```
 
-// External ceasing
+External ceasing
+
+```javascript
 var subscription = EventPromise.subscribeEvent(window, "click", function () { alert("Clicked") });
 EventPromise.waitEvent(window, "scroll").then(function () { subscription.cease() });
+```
 
-// Waiting subscription cessation
+Waiting subscription cessation
+
+```javascript
 EventPromise.subscribeEvent(window, "keydown",
   function (ev, subscription) {
   if (ev.key !== 'p')
@@ -65,8 +81,11 @@ EventPromise.subscribeEvent(window, "keydown",
     subscription.cease();
   })
   .cessation.then(function () { alert("You pressed P. Thanks. Test end.") });
+```
 
-// Chaining event listeners
+Chaining event listeners
+
+```javascript
 EventPromise.waitEvent(window, "click")
   .then(function () { alert("Just cleared level 1"); return EventPromise.waitEvent(window, "keydown") })
   .then(function () { alert("Just cleared level 2"); return EventPromise.waitEvent(window, "scroll") })
