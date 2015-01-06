@@ -83,12 +83,12 @@ EventPromise.waitEvent(window, "scroll").then(function () { subscription.cease()
 ```javascript
 EventPromise.subscribeEvent(window, "keydown",
   function (ev, subscription) {
-  if (ev.key !== 'p')
-    alert("Please press 'P'");
-  else
-    subscription.cease();
-  })
-  .cessation.then(function () { alert("You pressed P. Thanks. Test end.") });
+    if (ev.key !== 'p')
+      alert("Please press 'P'");
+    else
+      subscription.cease();
+  }
+).cessation.then(function () { alert("You pressed P. Thanks. Test end.") });
 ```
 
 ### Chaining event listeners
