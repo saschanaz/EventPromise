@@ -13,3 +13,6 @@ declare module EventPromise {
         error?: any;
     }
 }
+declare class Contract<T> extends Promise<T> {
+}
+declare var c: Contract<number>;

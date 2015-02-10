@@ -21,6 +21,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
 var EventPromise;
 (function (EventPromise) {
     function waitEvent(target, eventName) {
@@ -41,8 +47,7 @@ var EventPromise;
     EventPromise.subscribeEvent = subscribeEvent;
     function subscribeBlank() {
         var subscription = createChainableBase();
-        subscription.cease = function (options) {
-        };
+        subscription.cease = function (options) { };
         subscription.cessation = Promise.resolve();
         return subscription;
     }
@@ -84,4 +89,13 @@ var EventPromise;
         return chainable;
     }
 })(EventPromise || (EventPromise = {}));
+var Contract = (function (_super) {
+    __extends(Contract, _super);
+    function Contract() {
+        _super.apply(this, arguments);
+    }
+    return Contract;
+})(Promise);
+var c;
+c.then();
 //# sourceMappingURL=eventpromise.js.map
