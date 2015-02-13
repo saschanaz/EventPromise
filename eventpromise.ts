@@ -103,7 +103,7 @@ interface Contract<T> extends Promise<T> {
     finish(value?: T): void;
     cancel(reason?: any): void;
     invalidate(): void;
-    chain<TNext extends Event>(next: Contract<TNext>): Contract<TNext>;
+    chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
 }
 interface ContractControl<T> {
     resolve(value?: T | Promise<T>): void;
@@ -125,25 +125,10 @@ interface ContractConstructor {
 }
 
 
-
+/*
+Contract class code is based on `contract.ts` output.
+*/
 var Contract: ContractConstructor = <any>{
 };
 
-/*
-Contract class is based on this code.
-
-class Contract<T> extends Promise<T> {
-    previous: Contract<T>;
-    constructor(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void) {
-        super(init);
-    }
-
-    cease(outcome: T): void {
-
-    }
-    chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext> {
-
-    }
-}
-*/
 new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });
