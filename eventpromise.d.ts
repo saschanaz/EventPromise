@@ -13,6 +13,26 @@ declare module EventPromise {
         error?: any;
     }
 }
-declare class Contract<T> extends Promise<T> {
+interface Contract<T> extends Promise<T> {
+    previous?: Contract<any>;
+    finish(value?: T): void;
+    cancel(reason?: any): void;
+    invalidate(): void;
+    chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
 }
-declare var c: Contract<number>;
+interface ContractControl<T> {
+    resolve(value?: T | Promise<T>): void;
+    reject(reason?: any): void;
+    forget(): void;
+}
+interface ContractEntrance<T> {
+    init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void;
+    revert: () => void;
+}
+interface ContractConstructor {
+    prototype: Contract<any>;
+    new <T>(entrance: ContractEntrance<T>): Contract<T>;
+    resolve(): Contract<void>;
+    reject(): Contract<void>;
+}
+declare var Contract: ContractConstructor;

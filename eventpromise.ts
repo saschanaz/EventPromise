@@ -128,7 +128,54 @@ interface ContractConstructor {
 /*
 Contract class code is based on `contract.ts` output.
 */
-var Contract: ContractConstructor = <any>{
-};
+var Contract: ContractConstructor = <any>(function (_super: any) {
+    var Contract: any = function (_a: any) {
+        var _this = this;
+        var init = _a.init, revert = _a.revert;
+        _super.call(this, function (resolve: any, reject: any) {
+            var chainedRevert = function () {
+                if (_this.previous)
+                    _this.previous.invalidate();
+                revert();
+            };
+            _this.finish = function (value: any) {
+                chainedRevert();
+                resolve(value);
+            };
+            _this.cancel = function (error: any) {
+                chainedRevert();
+                reject(error);
+            };
+            _this.invalidate = function () { return chainedRevert(); };
+            init(resolve, reject);
+        });
+    };
+
+    (function () {
+        Contract.prototype = Object.create(Promise.prototype, {
+            constructor: {
+                value: Contract,
+                enumerable: false,
+                writable: true,
+                configurable: true
+            }
+        });
+        Contract.__proto__ = Promise;
+    })();
+    //__extends(Contract, _super);
+
+    Contract.prototype.chain = function (next: any) {
+        var _this = this;
+        var nextContract = new Contract({
+            init: function (resolve: any, reject: any) {
+                _this.then(function (value: any) { return next(value); }).then(function (value: any) { return resolve(value); }, function (reason: any) { return reject(reason); });
+            },
+            revert: function () { }
+        });
+        nextContract.previous = this;
+        return nextContract;
+    };
+    return Contract;
+})(Promise);
 
 new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });
