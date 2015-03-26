@@ -27,6 +27,7 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+///<reference path="submodules/subclassj/subclassj.ts" />
 // Modified for Win10 10041 EdgeHTML bug workaround
 var __extends = function (d, b) {
     for (var p in b)
@@ -44,36 +45,56 @@ var EventPromise;
     var Contract = (function (_super) {
         __extends(Contract, _super);
         function Contract(_a) {
-            var _this = this;
             var init = _a.init, revert = _a.revert;
-            _super.call(this, function (resolve, reject) {
-                var chainedRevert = function () {
-                    if (_this.previous)
-                        _this.previous.invalidate();
-                    if (revert)
-                        revert();
-                };
-                _this.finish = function (value) {
-                    chainedRevert();
-                    resolve(value);
-                };
-                _this.cancel = function (error) {
-                    chainedRevert();
-                    reject(error);
-                };
-                _this.invalidate = function () {
-                    return chainedRevert();
-                };
+            var resolver;
+            var rejector;
+            var chainedRevert = function () {
+                if (newThis.previous)
+                    newThis.previous.invalidate();
+                singleRevert();
+            };
+            var singleRevert = function () {
+                if (revert)
+                    revert(newThis.status);
+            };
+            var listener = function (resolve, reject) {
+                var _this = this;
+                resolver = resolve;
+                rejector = reject;
                 init(function (value) {
-                    if (revert)
-                        revert();
+                    _this.status = "resolved";
+                    singleRevert();
                     resolve(value);
                 }, function (reason) {
-                    if (revert)
-                        revert();
+                    _this.status = "rejected";
+                    singleRevert();
                     reject(reason);
                 });
-            });
+            };
+            var subclassj = !!window.SubclassJ && SubclassJ.required;
+            var newThis = subclassj ? SubclassJ.getNewThis(Contract, Promise, [
+                listener
+            ]) : this;
+            if (!subclassj)
+                _super.call(this, listener);
+            newThis.status = "unresolved";
+            newThis.finish = function (value) {
+                newThis.status = "resolved";
+                chainedRevert();
+                resolver(value);
+            };
+            newThis.cancel = function (error) {
+                newThis.status = "rejected";
+                chainedRevert();
+                rejector(error);
+            };
+            newThis.invalidate = function () {
+                newThis.status = "invalidated";
+                newThis.finish = newThis.cancel = function () {
+                };
+                chainedRevert();
+            };
+            return newThis;
         }
         Contract.prototype.chain = function (next) {
             var _this = this;
@@ -97,14 +118,6 @@ var EventPromise;
     })(_Temp.Promise);
     EventPromise.Contract = Contract;
 })(EventPromise || (EventPromise = {}));
-/*
-Contract class code is based on `contract.ts` output.
-*/
 var Contract = EventPromise.Contract;
-new Contract({
-    init: function (resolve, reject) {
-    },
-    revert: function () {
-    }
-});
+//new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });
 //# sourceMappingURL=eventpromise.js.map

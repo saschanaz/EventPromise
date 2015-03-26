@@ -1,3 +1,4 @@
+/// <reference path="submodules/subclassj/subclassj.d.ts" />
 declare var __extends: (d: any, b: any) => void;
 declare module EventPromise {
     module _Temp {
@@ -16,12 +17,16 @@ declare module EventPromise {
     }
     class Contract<T> extends _Temp.Promise<T> {
         previous: Contract<any>;
+        status: string;
         finish: (value: T | Promise<T>) => void;
         cancel: (error: any) => void;
         invalidate: () => void;
         constructor(_0: ContractEntrance<T>);
         chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
     }
+}
+interface Window {
+    SubclassJ: typeof SubclassJ;
 }
 interface Contract<T> extends Promise<T> {
     previous?: Contract<any>;
@@ -39,7 +44,7 @@ interface ContractEntrance<T> {
     /** Initiating listener for a contract. */
     init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void;
     /** Reverting listener for a contract. This will always be called after a contract gets finished in any status. */
-    revert?: () => void;
+    revert?: (status: string) => void;
 }
 interface ContractConstructor {
     prototype: Contract<any>;

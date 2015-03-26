@@ -22,6 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+///<reference path="submodules/subclassj/subclassj.ts" />
+
 // Modified for Win10 10041 EdgeHTML bug workaround
 var __extends = function (d: any, b: any) {
   for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -57,31 +59,43 @@ module EventPromise {
     invalidate: () => void;
     
     constructor({init, revert}: ContractEntrance<T>) {
-      super((resolve, reject) => {
-        // TODO: implement SubclassJ
-        let newThis = this;
-
-        var chainedRevert = () => {
-          if (newThis.previous)
-            newThis.previous.invalidate();
-          singleRevert();
-        };
-        var singleRevert = () => {
-          if (revert)
-            revert(newThis.status);
-        }
-
-
-        newThis.finish = (value) => { newThis.status = "resolved"; chainedRevert(); resolve(value); };
-        newThis.cancel = (error) => { newThis.status = "rejected"; chainedRevert(); reject(error) };
-        newThis.invalidate = () => { newThis.status = "invalidated"; chainedRevert(); }
+      let resolver: (value?: T | Promise<T>) => void;
+      let rejector: (reason?: any) => void;
+      
+      var chainedRevert = () => {
+        if (newThis.previous)
+          newThis.previous.invalidate();
+        singleRevert();
+      };
+      var singleRevert = () => {
+        if (revert)
+          revert(newThis.status);
+      }
+      
+      let listener = function (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) {
+        resolver = resolve;
+        rejector = reject;
         init(
-          (value) => { newThis.status = "resolved"; singleRevert(); resolve(value) },
-          (reason?) => { newThis.status = "rejected"; singleRevert(); reject(reason) }
+          (value) => { this.status = "resolved"; singleRevert(); resolve(value) },
+          (reason?) => { this.status = "rejected"; singleRevert(); reject(reason) }
           );
+      };
 
-        return newThis;
-      });
+      let subclassj = !!window.SubclassJ && SubclassJ.required;
+      var newThis: Contract<T> = subclassj ? SubclassJ.getNewThis(Contract, Promise, [listener]) : this;
+      if (!subclassj)
+        super(listener);
+
+      newThis.status = "unresolved";
+      newThis.finish = (value: T | Promise<T>) => { newThis.status = "resolved"; chainedRevert(); resolver(value); };
+      newThis.cancel = (error: any) => { newThis.status = "rejected"; chainedRevert(); rejector(error) };
+      newThis.invalidate = () => {
+        newThis.status = "invalidated";
+        newThis.finish = newThis.cancel = () => { };
+        chainedRevert();
+      }
+
+      return newThis;
     }
 
     chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext> {
@@ -96,6 +110,10 @@ module EventPromise {
       return nextContract;
     }
   }
+}
+
+interface Window {
+  SubclassJ: typeof SubclassJ;
 }
 
 interface Contract<T> extends Promise<T> {
