@@ -1,0 +1,3 @@
+[submodule "submodules/subclassj"]
+	path = submodules/subclassj
+	url = https://github.com/SaschaNaz/SubclassJ.git
