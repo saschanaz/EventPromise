@@ -1,16 +1,26 @@
+declare var __extends: (d: any, b: any) => void;
 declare module EventPromise {
-    function waitEvent<T extends Event>(target: EventTarget, eventName: string): Promise<T>;
-    function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
-    function subscribeBlank(): EventSubscription;
-    interface EventSubscription {
-        previous?: EventSubscription;
-        cease(options?: EventCessationOptions): void;
-        cessation: Promise<void>;
-        chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
+    module _Temp {
+        class Promise<T> {
+            constructor(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void);
+            then<TResult>(onfulfilled?: (value: T) => TResult | Promise<TResult>, onrejected?: (reason: any) => TResult | Promise<TResult>): Promise<TResult>;
+            catch(onrejected?: (reason: any) => T | Promise<T>): Promise<T>;
+            static all<T>(values: (T | Promise<T>)[]): Promise<T[]>;
+            static all(values: Promise<void>[]): Promise<void>;
+            static race<T>(values: (T | Promise<T>)[]): Promise<T>;
+            static reject(reason: any): Promise<void>;
+            static reject<T>(reason: any): Promise<T>;
+            static resolve<T>(value: T | Promise<T>): Promise<T>;
+            static resolve(): Promise<void>;
+        }
     }
-    interface EventCessationOptions {
-        silently?: boolean;
-        error?: any;
+    class Contract<T> extends _Temp.Promise<T> {
+        previous: Contract<any>;
+        finish: (value: T | Promise<T>) => void;
+        cancel: (error: any) => void;
+        invalidate: () => void;
+        constructor(_0: ContractEntrance<T>);
+        chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
     }
 }
 interface Contract<T> extends Promise<T> {
@@ -26,13 +36,13 @@ interface ContractControl<T> {
     forget(): void;
 }
 interface ContractEntrance<T> {
+    /** Initiating listener for a contract. */
     init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void;
-    revert: () => void;
+    /** Reverting listener for a contract. This will always be called after a contract gets finished in any status. */
+    revert?: () => void;
 }
 interface ContractConstructor {
     prototype: Contract<any>;
     new <T>(entrance: ContractEntrance<T>): Contract<T>;
-    resolve(): Contract<void>;
-    reject(): Contract<void>;
 }
 declare var Contract: ContractConstructor;

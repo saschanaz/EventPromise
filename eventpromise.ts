@@ -22,79 +22,80 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+// Modified for Win10 10041 EdgeHTML bug workaround
+var __extends = function (d: any, b: any) {
+  for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+  d.prototype = Object.create(b.prototype);
+  d.__proto__ = b;
+};
+
 module EventPromise {
-    export function waitEvent<T extends Event>(target: EventTarget, eventName: string) {
-        return new Promise<T>((resolve, reject) => {
-            var eventListener = (event: T) => {
-                target.removeEventListener(eventName, eventListener);
-                resolve(event);
-            };
-            target.addEventListener(eventName, eventListener);
-        });
-    }
+  export module _Temp {
+    export declare class Promise<T> {
+      constructor(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void);
 
-    export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
-        var base = createSubscriptionBase(target, eventName, listener);
-        target.addEventListener(eventName, base.eventListener);
-        return base.subscription;
-    }
+      then<TResult>(onfulfilled?: (value: T) => TResult | Promise<TResult>, onrejected?: (reason: any) => TResult | Promise<TResult>): Promise<TResult>;
+      catch(onrejected?: (reason: any) => T | Promise<T>): Promise<T>;
 
-    export function subscribeBlank() {
-        var subscription = createChainableBase();
-        subscription.cease = (options: EventCessationOptions) => { };
-        subscription.cessation = Promise.resolve();
-        return subscription;
+      static all<T>(values: (T | Promise<T>)[]): Promise<T[]>;
+      static all(values: Promise<void>[]): Promise<void>;
+      static race<T>(values: (T | Promise<T>)[]): Promise<T>;
+      static reject(reason: any): Promise<void>;
+      static reject<T>(reason: any): Promise<T>;
+      static resolve<T>(value: T | Promise<T>): Promise<T>;
+      static resolve(): Promise<void>;
     }
+  }
+  (<any>_Temp).Promise = Promise;
 
-    function createSubscriptionBase<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
-        var oncessation: () => void;
-        var onerror: (error: any) => void;
-        var subscription = createChainableBase();
-        subscription.cease = (options: EventCessationOptions = {}) => {
-            if (subscription.previous)
-                subscription.previous.cease({ silently: true });
-            target.removeEventListener(eventName, eventListener);
-            if (options.error)
-                onerror(options.error);
-            else if (!options.silently)
-                oncessation();
+  export class Contract<T> extends _Temp.Promise<T> {
+    previous: Contract<any>;
+    status: string;
+
+    finish: (value: T | Promise<T>) => void;
+    cancel: (error: any) => void;
+    invalidate: () => void;
+    
+    constructor({init, revert}: ContractEntrance<T>) {
+      super((resolve, reject) => {
+        // TODO: implement SubclassJ
+        let newThis = this;
+
+        var chainedRevert = () => {
+          if (newThis.previous)
+            newThis.previous.invalidate();
+          singleRevert();
         };
-        subscription.cessation = new Promise<void>((resolve, reject) => {
-            oncessation = () => resolve();
-            onerror = (error) => reject(error);
-        });
+        var singleRevert = () => {
+          if (revert)
+            revert(newThis.status);
+        }
 
-        var eventListener = (event: T) => {
-            listener.call(target, event, subscription);
-        };
-        return { subscription, eventListener };
+
+        newThis.finish = (value) => { newThis.status = "resolved"; chainedRevert(); resolve(value); };
+        newThis.cancel = (error) => { newThis.status = "rejected"; chainedRevert(); reject(error) };
+        newThis.invalidate = () => { newThis.status = "invalidated"; chainedRevert(); }
+        init(
+          (value) => { newThis.status = "resolved"; singleRevert(); resolve(value) },
+          (reason?) => { newThis.status = "rejected"; singleRevert(); reject(reason) }
+          );
+
+        return newThis;
+      });
     }
 
-    function createChainableBase(): EventSubscription {
-        var chainable: EventSubscription = {
-            cease: null,
-            cessation: null,
-            chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
-                var chained = createSubscriptionBase(target, eventName, listener);
-                chainable.cessation.then(() => target.addEventListener(eventName, chained.eventListener));
-                chained.subscription.previous = chainable;
-                return chained.subscription;
-            }
-        };
-        return chainable;
+    chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext> {
+      var nextContract = new Contract<TNext>({
+        init: (resolve, reject) => {
+          this.then((value) => next(value))
+            .then((value) => resolve(value), (reason) => reject(reason));
+        },
+        revert: () => { }
+      });
+      nextContract.previous = this;
+      return nextContract;
     }
-
-    export interface EventSubscription {
-        previous?: EventSubscription;
-        cease(options?: EventCessationOptions): void;
-        cessation: Promise<void>;
-        chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
-    }
-
-    export interface EventCessationOptions {
-        silently?: boolean;
-        error?: any;
-    }
+  }
 }
 
 interface Contract<T> extends Promise<T> {
@@ -111,71 +112,17 @@ interface ContractControl<T> {
     forget(): void;
 }
 interface ContractEntrance<T> {
-    init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void;
-    revert: () => void;
+  /** Initiating listener for a contract. */
+  init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void;
+  /** Reverting listener for a contract. This will always be called after a contract gets finished in any status. */
+  revert?: (status: string) => void;
 }
-// TODO: How can a Contract receive external canceling event? - Resolved: revert() function - to be called in .cancel()/.invalidate()
 
 interface ContractConstructor {
     prototype: Contract<any>;
     new <T>(entrance: ContractEntrance<T>): Contract<T>;
-    
-    resolve(): Contract<void>;
-    reject(): Contract<void>;
 }
 
+var Contract: ContractConstructor = EventPromise.Contract;
 
-/*
-Contract class code is based on `contract.ts` output.
-*/
-var Contract: ContractConstructor = <any>(function (_super: any) {
-    var Contract: any = function (_a: any) {
-        var _this = this;
-        var init = _a.init, revert = _a.revert;
-        _super.call(this, function (resolve: any, reject: any) {
-            var chainedRevert = function () {
-                if (_this.previous)
-                    _this.previous.invalidate();
-                revert();
-            };
-            _this.finish = function (value: any) {
-                chainedRevert();
-                resolve(value);
-            };
-            _this.cancel = function (error: any) {
-                chainedRevert();
-                reject(error);
-            };
-            _this.invalidate = function () { return chainedRevert(); };
-            init(resolve, reject);
-        });
-    };
-
-    (function () {
-        Contract.prototype = Object.create(Promise.prototype, {
-            constructor: {
-                value: Contract,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            }
-        });
-        Contract.__proto__ = Promise;
-    })();
-    //__extends(Contract, _super);
-
-    Contract.prototype.chain = function (next: any) {
-        var _this = this;
-        var nextContract = new Contract({
-            init: function (resolve: any, reject: any) {
-                _this.then(function (value: any) { return next(value); }).then(function (value: any) { return resolve(value); }, function (reason: any) { return reject(reason); });
-            },
-            revert: function () { }
-        });
-        nextContract.previous = this;
-        return nextContract;
-    };
-    return Contract;
-})(Promise);
-
-new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });
+//new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });

@@ -21,125 +21,90 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+// Modified for Win10 10041 EdgeHTML bug workaround
+var __extends = function (d, b) {
+    for (var p in b)
+        if (b.hasOwnProperty(p))
+            d[p] = b[p];
+    d.prototype = Object.create(b.prototype);
+    d.__proto__ = b;
+};
 var EventPromise;
 (function (EventPromise) {
-    function waitEvent(target, eventName) {
-        return new Promise(function (resolve, reject) {
-            var eventListener = function (event) {
-                target.removeEventListener(eventName, eventListener);
-                resolve(event);
-            };
-            target.addEventListener(eventName, eventListener);
-        });
-    }
-    EventPromise.waitEvent = waitEvent;
-    function subscribeEvent(target, eventName, listener) {
-        var base = createSubscriptionBase(target, eventName, listener);
-        target.addEventListener(eventName, base.eventListener);
-        return base.subscription;
-    }
-    EventPromise.subscribeEvent = subscribeEvent;
-    function subscribeBlank() {
-        var subscription = createChainableBase();
-        subscription.cease = function (options) { };
-        subscription.cessation = Promise.resolve();
-        return subscription;
-    }
-    EventPromise.subscribeBlank = subscribeBlank;
-    function createSubscriptionBase(target, eventName, listener) {
-        var oncessation;
-        var onerror;
-        var subscription = createChainableBase();
-        subscription.cease = function (options) {
-            if (options === void 0) { options = {}; }
-            if (subscription.previous)
-                subscription.previous.cease({ silently: true });
-            target.removeEventListener(eventName, eventListener);
-            if (options.error)
-                onerror(options.error);
-            else if (!options.silently)
-                oncessation();
+    var _Temp;
+    (function (_Temp) {
+    })(_Temp = EventPromise._Temp || (EventPromise._Temp = {}));
+    _Temp.Promise = Promise;
+    var Contract = (function (_super) {
+        __extends(Contract, _super);
+        function Contract(_a) {
+            var _this = this;
+            var init = _a.init, revert = _a.revert;
+            _super.call(this, function (resolve, reject) {
+                var chainedRevert = function () {
+                    if (_this.previous)
+                        _this.previous.invalidate();
+                    if (revert)
+                        revert();
+                };
+                _this.finish = function (value) {
+                    chainedRevert();
+                    resolve(value);
+                };
+                _this.cancel = function (error) {
+                    chainedRevert();
+                    reject(error);
+                };
+                _this.invalidate = function () {
+                    return chainedRevert();
+                };
+                init(function (value) {
+                    if (revert)
+                        revert();
+                    resolve(value);
+                }, function (reason) {
+                    if (revert)
+                        revert();
+                    reject(reason);
+                });
+            });
+        }
+        Contract.prototype.chain = function (next) {
+            var _this = this;
+            var nextContract = new Contract({
+                init: function (resolve, reject) {
+                    _this.then(function (value) {
+                        return next(value);
+                    }).then(function (value) {
+                        return resolve(value);
+                    }, function (reason) {
+                        return reject(reason);
+                    });
+                },
+                revert: function () {
+                }
+            });
+            nextContract.previous = this;
+            return nextContract;
         };
-        subscription.cessation = new Promise(function (resolve, reject) {
-            oncessation = function () { return resolve(); };
-            onerror = function (error) { return reject(error); };
-        });
-        var eventListener = function (event) {
-            listener.call(target, event, subscription);
-        };
-        return { subscription: subscription, eventListener: eventListener };
-    }
-    function createChainableBase() {
-        var chainable = {
-            cease: null,
-            cessation: null,
-            chain: function (target, eventName, listener) {
-                var chained = createSubscriptionBase(target, eventName, listener);
-                chainable.cessation.then(function () { return target.addEventListener(eventName, chained.eventListener); });
-                chained.subscription.previous = chainable;
-                return chained.subscription;
-            }
-        };
-        return chainable;
-    }
+        return Contract;
+    })(_Temp.Promise);
+    EventPromise.Contract = Contract;
 })(EventPromise || (EventPromise = {}));
 /*
 Contract class code is based on `contract.ts` output.
 */
-var Contract = (function (_super) {
-    var Contract = function (_a) {
-        var _this = this;
-        var init = _a.init, revert = _a.revert;
-        _super.call(this, function (resolve, reject) {
-            var chainedRevert = function () {
-                if (_this.previous)
-                    _this.previous.invalidate();
-                revert();
-            };
-            _this.finish = function (value) {
-                chainedRevert();
-                resolve(value);
-            };
-            _this.cancel = function (error) {
-                chainedRevert();
-                reject(error);
-            };
-            _this.invalidate = function () {
-                return chainedRevert();
-            };
-            init(resolve, reject);
-        });
-    };
-    (function () {
-        Contract.prototype = Object.create(Promise.prototype, {
-            constructor: {
-                value: Contract,
-                enumerable: false,
-                writable: true,
-                configurable: true
-            }
-        });
-        Contract.__proto__ = Promise;
-    })();
-    //__extends(Contract, _super);
-    Contract.prototype.chain = function (next) {
-        var _this = this;
-        var nextContract = new Contract({
-            init: function (resolve, reject) {
-                _this.then(function (value) {
-                    return next(value);
-                }).then(function (value) {
-                    return resolve(value);
-                }, function (reason) {
-                    return reject(reason);
-                });
-            },
-            revert: function () { }
-        });
-        nextContract.previous = this;
-        return nextContract;
-    };
-    return Contract;
-})(Promise);
-new Contract({ init: function (resolve, reject) { }, revert: function () { } });
+var Contract = EventPromise.Contract;
+new Contract({
+    init: function (resolve, reject) {
+    },
+    revert: function () {
+    }
+});
 //# sourceMappingURL=eventpromise.js.map
