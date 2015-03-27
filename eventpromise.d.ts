@@ -1,5 +1,7 @@
-/// <reference path="submodules/subclassj/subclassj.d.ts" />
-declare var __extends: (d: any, b: any) => void;
+declare module SubclassJ {
+    let required: boolean;
+    function getNewThis(thisArg: any, extending: any, arguments: IArguments | any[]): any;
+}
 declare module EventPromise {
     module _Temp {
         class Promise<T> {
@@ -51,3 +53,6 @@ interface ContractConstructor {
     new <T>(entrance: ContractEntrance<T>): Contract<T>;
 }
 declare var Contract: ContractConstructor;
+declare module EventPromise {
+    function waitEvent<T extends Event>(target: EventTarget, eventName: string): Contract<T>;
+}

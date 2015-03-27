@@ -2,9 +2,11 @@
     "compilerOptions": {
         "noImplicitAny": true,
         "sourceMap": true,
-        "declaration": true
+        "declaration": true,
+        "out": "eventpromise.js"
     },
     "files": [
+        "contract.ts",
         "eventpromise.ts"
     ]
 }

@@ -2,15 +2,23 @@
 
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <title>TypeScript HTML App</title>
-    <link rel="stylesheet" href="app.css" type="text/css" />
-    <script src="../submodules/subclassj/SubclassJ.js"></script>
-    <script src="../eventpromise.js"></script>
+  <meta charset="utf-8" />
+  <title>TypeScript HTML App</title>
+  <link rel="stylesheet" href="app.css" type="text/css" />
+  <script src="../submodules/subclassj/SubclassJ.js"></script>
+  <script src="../eventpromise.js"></script>
+  <script>
+    // Modified for Win10 10041 EdgeHTML bug workaround
+    var __extends = function (d, b) {
+      for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+      d.prototype = Object.create(b.prototype);
+      d.__proto__ = b;
+    };
+  </script>
 </head>
 <body>
-    <h1>TypeScript HTML App</h1>
+  <h1>TypeScript HTML App</h1>
 
-    <div id="content"></div>
+  <div id="content"></div>
 </body>
 </html>
