@@ -61,29 +61,26 @@ var EventPromise;
                 singleRevert();
             };
             var singleRevert = function () {
-                if (!revert)
-                    return;
-                revert(newThis.status);
-                delete revert;
+                if (revert)
+                    revert(newThis.status);
+                revert = null;
             };
-            var changeStatus = function (status) {
+            var changeStatusDelayed = function (status) {
                 var change = function () {
-                    newThis.status = status;
-                    singleRevert();
+                    return newThis.status = status;
                 };
-                if (newThis)
-                    change();
-                else
-                    setImmediate(change);
+                newThis ? change() : setImmediate(change);
             };
             var listener = function (resolve, reject) {
                 resolver = resolve;
                 rejector = reject;
                 init(function (value) {
-                    changeStatus("resolved");
+                    changeStatusDelayed("resolved");
+                    singleRevert();
                     resolve(value);
                 }, function (reason) {
-                    changeStatus("rejected");
+                    changeStatusDelayed("rejected");
+                    singleRevert();
                     reject(reason);
                 });
             };
@@ -95,17 +92,20 @@ var EventPromise;
                 _super.call(this, listener);
             newThis.status = "unresolved";
             newThis.finish = function (value) {
-                changeStatus("resolved");
+                newThis.status = "resolved";
+                chainedRevert();
                 resolver(value);
             };
             newThis.cancel = function (error) {
-                changeStatus("rejected");
+                newThis.status = "rejected";
+                chainedRevert();
                 rejector(error);
             };
             newThis.invalidate = function () {
+                newThis.status = "invalidated";
                 newThis.finish = newThis.cancel = function () {
                 };
-                changeStatus("invalidated");
+                chainedRevert();
             };
             return newThis;
         }
@@ -174,6 +174,21 @@ var EventPromise;
         });
     }
     EventPromise.waitEvent = waitEvent;
+    function subscribeEvent(target, eventName, listener) {
+        var eventListener = function (evt) {
+            return listener.call(target, evt, contract);
+        };
+        var contract = new EventPromise.Contract({
+            init: function (resolve, reject) {
+                target.addEventListener(eventName, eventListener);
+            },
+            revert: function () {
+                return target.removeEventListener(eventName, eventListener);
+            }
+        });
+        return contract;
+    }
+    EventPromise.subscribeEvent = subscribeEvent;
 })(EventPromise || (EventPromise = {}));
 //new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });
 //# sourceMappingURL=eventpromise.js.map

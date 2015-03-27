@@ -53,4 +53,5 @@ interface ContractConstructor {
 declare var Contract: ContractConstructor;
 declare module EventPromise {
     function waitEvent<T extends Event>(target: EventTarget, eventName: string): Contract<T>;
+    function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (evt: T, contract: Contract<any>) => any): Contract<T>;
 }

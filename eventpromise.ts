@@ -36,6 +36,16 @@ module EventPromise {
     });
   }
 
+  export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (evt: T, contract: Contract<any>) => any) {
+    let eventListener = (evt: T) => listener.call(target, evt, contract);
+    var contract = new Contract<T>({
+      init: (resolve, reject) => {
+        target.addEventListener(eventName, eventListener);
+      },
+      revert: () => target.removeEventListener(eventName, eventListener)
+    });
+    return contract;
+  }
   // TODO: Reimplement waitEvent and subscribeEvent using Contract
 }
 //new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });
