@@ -68,6 +68,7 @@ module EventPromise {
         singleRevert();
       };
       var singleRevert = () => {
+        breakMethods();
         if (revert)
           revert(newThis.status);
         revert = null;
@@ -75,6 +76,9 @@ module EventPromise {
       var changeStatusDelayed = (status: string) => {
         var change = () => newThis.status = status;
         newThis ? change() : Promise.resolve().then(change);
+      }
+      var breakMethods = () => {
+        newThis.finish = newThis.cancel = newThis.invalidate = () => { };
       }
       
       let listener = (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => {
@@ -96,7 +100,6 @@ module EventPromise {
       newThis.cancel = (error: any) => { newThis.status = "rejected"; chainedRevert(); rejector(error) };
       newThis.invalidate = () => {
         newThis.status = "invalidated";
-        newThis.finish = newThis.cancel = () => { };
         chainedRevert();
       }
 
