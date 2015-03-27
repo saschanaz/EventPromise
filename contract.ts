@@ -49,9 +49,6 @@ module EventPromise {
     }
   }
   (<any>_Temp).Promise = Promise;
-  var setImmediate = window.setImmediate || function (expression: any, ...args: any[]) {
-    return window.setTimeout(expression, 0, ...args);
-  };
 
   export class Contract<T> extends _Temp.Promise<T> {
     previous: Contract<any>;
@@ -77,7 +74,7 @@ module EventPromise {
       }
       var changeStatusDelayed = (status: string) => {
         var change = () => newThis.status = status;
-        newThis ? change() : setImmediate(change);
+        newThis ? change() : Promise.resolve().then(change);
       }
       
       let listener = (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => {
@@ -111,8 +108,7 @@ module EventPromise {
         init: (resolve, reject) => {
           this.then((value) => next(value))
             .then((value) => resolve(value), (reason) => reject(reason));
-        },
-        revert: () => { }
+        }
       });
       nextContract.previous = this;
       return nextContract;

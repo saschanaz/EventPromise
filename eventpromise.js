@@ -42,13 +42,6 @@ var EventPromise;
     (function (_Temp) {
     })(_Temp = EventPromise._Temp || (EventPromise._Temp = {}));
     _Temp.Promise = Promise;
-    var setImmediate = window.setImmediate || function (expression) {
-        var args = [];
-        for (var _i = 1; _i < arguments.length; _i++) {
-            args[_i - 1] = arguments[_i];
-        }
-        return window.setTimeout.apply(window, [expression, 0].concat(args));
-    };
     var Contract = (function (_super) {
         __extends(Contract, _super);
         function Contract(_a) {
@@ -69,7 +62,7 @@ var EventPromise;
                 var change = function () {
                     return newThis.status = status;
                 };
-                newThis ? change() : setImmediate(change);
+                newThis ? change() : Promise.resolve().then(change);
             };
             var listener = function (resolve, reject) {
                 resolver = resolve;
@@ -120,8 +113,6 @@ var EventPromise;
                     }, function (reason) {
                         return reject(reason);
                     });
-                },
-                revert: function () {
                 }
             });
             nextContract.previous = this;
