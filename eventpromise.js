@@ -28,12 +28,27 @@ var __extends = this.__extends || function (d, b) {
     d.prototype = new __();
 };
 ///<reference path="submodules/subclassj/subclassj.d.ts" />
+// Modified for Win10 10041 EdgeHTML bug workaround
+var __extends = function (d, b) {
+    for (var p in b)
+        if (b.hasOwnProperty(p))
+            d[p] = b[p];
+    d.prototype = Object.create(b.prototype);
+    d.__proto__ = b;
+};
 var EventPromise;
 (function (EventPromise) {
     var _Temp;
     (function (_Temp) {
     })(_Temp = EventPromise._Temp || (EventPromise._Temp = {}));
     _Temp.Promise = Promise;
+    var setImmediate = window.setImmediate || function (expression) {
+        var args = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            args[_i - 1] = arguments[_i];
+        }
+        return window.setTimeout.apply(window, [expression, 0].concat(args));
+    };
     var Contract = (function (_super) {
         __extends(Contract, _super);
         function Contract(_a) {
@@ -46,20 +61,29 @@ var EventPromise;
                 singleRevert();
             };
             var singleRevert = function () {
-                if (revert)
-                    revert(newThis.status);
+                if (!revert)
+                    return;
+                revert(newThis.status);
+                delete revert;
+            };
+            var changeStatus = function (status) {
+                var change = function () {
+                    newThis.status = status;
+                    singleRevert();
+                };
+                if (newThis)
+                    change();
+                else
+                    setImmediate(change);
             };
             var listener = function (resolve, reject) {
-                var _this = this;
                 resolver = resolve;
                 rejector = reject;
                 init(function (value) {
-                    _this.status = "resolved";
-                    singleRevert();
+                    changeStatus("resolved");
                     resolve(value);
                 }, function (reason) {
-                    _this.status = "rejected";
-                    singleRevert();
+                    changeStatus("rejected");
                     reject(reason);
                 });
             };
@@ -71,20 +95,17 @@ var EventPromise;
                 _super.call(this, listener);
             newThis.status = "unresolved";
             newThis.finish = function (value) {
-                newThis.status = "resolved";
-                chainedRevert();
+                changeStatus("resolved");
                 resolver(value);
             };
             newThis.cancel = function (error) {
-                newThis.status = "rejected";
-                chainedRevert();
+                changeStatus("rejected");
                 rejector(error);
             };
             newThis.invalidate = function () {
-                newThis.status = "invalidated";
                 newThis.finish = newThis.cancel = function () {
                 };
-                chainedRevert();
+                changeStatus("invalidated");
             };
             return newThis;
         }

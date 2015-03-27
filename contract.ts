@@ -24,6 +24,13 @@ SOFTWARE.
 
 ///<reference path="submodules/subclassj/subclassj.d.ts" />
 
+// Modified for Win10 10041 EdgeHTML bug workaround
+var __extends = function (d: any, b: any) {
+  for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+  d.prototype = Object.create(b.prototype);
+  d.__proto__ = b;
+};
+
 module EventPromise {
   export module _Temp {
     export declare class Promise<T> {
@@ -42,6 +49,9 @@ module EventPromise {
     }
   }
   (<any>_Temp).Promise = Promise;
+  var setImmediate = window.setImmediate || function (expression: any, ...args: any[]) {
+    return window.setTimeout(expression, 0, ...args);
+  };
 
   export class Contract<T> extends _Temp.Promise<T> {
     previous: Contract<any>;
@@ -63,14 +73,19 @@ module EventPromise {
       var singleRevert = () => {
         if (revert)
           revert(newThis.status);
+        revert = null;
+      }
+      var changeStatusDelayed = (status: string) => {
+        var change = () => newThis.status = status;
+        newThis ? change() : setImmediate(change);
       }
       
-      let listener = function (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) {
+      let listener = (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => {
         resolver = resolve;
         rejector = reject;
         init(
-          (value) => { this.status = "resolved"; singleRevert(); resolve(value) },
-          (reason?) => { this.status = "rejected"; singleRevert(); reject(reason) }
+          (value) => { changeStatusDelayed("resolved"); singleRevert(); resolve(value) },
+          (reason?) => { changeStatusDelayed("rejected"); singleRevert(); reject(reason) }
           );
       };
 

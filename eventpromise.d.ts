@@ -1,4 +1,5 @@
 /// <reference path="submodules/subclassj/subclassj.d.ts" />
+declare var __extends: (d: any, b: any) => void;
 declare module EventPromise {
     module _Temp {
         class Promise<T> {
