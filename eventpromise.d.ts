@@ -1,7 +1,4 @@
-declare module SubclassJ {
-    let required: boolean;
-    function getNewThis(thisArg: any, extending: any, arguments: IArguments | any[]): any;
-}
+/// <reference path="submodules/subclassj/subclassj.d.ts" />
 declare module EventPromise {
     module _Temp {
         class Promise<T> {
