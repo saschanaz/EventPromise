@@ -87,11 +87,22 @@ var EventPromise;
         }
         Contract.prototype.chain = function (next) {
             var _this = this;
-            // ISSUE 1: Two Contract objects here will not always have same status while they should.
-            // ISSUE 2: .invalidate() within constructor will not run chainedRevert()
+            var contracted;
             var nextContract = new Contract(function (resolve, reject) {
-                _this.then(function (value) { return next(value); })
+                _this.then(function (value) { return contracted = next(value); })
                     .then(function (value) { return resolve(value); }, function (reason) { return reject(reason); });
+            }, {
+                revert: function (status) {
+                    if (!(contracted instanceof Contract))
+                        return;
+                    switch (status) {
+                        case "resolved": contracted.finish(null);
+                        case "rejected": contracted.cancel(null);
+                        case "invalidated":
+                            contracted.invalidate();
+                            break;
+                    }
+                }
             });
             nextContract.previous = this;
             return nextContract;

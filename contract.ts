@@ -109,12 +109,23 @@ module EventPromise {
     }
 
     chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext> {
-      // ISSUE 1: Two Contract objects here will not always have same status while they should.
-      // ISSUE 2: .invalidate() within constructor will not run chainedRevert()
-      var nextContract = new Contract<TNext>((resolve, reject) => {
-        this.then((value) => next(value))
-          .then((value) => resolve(value), (reason) => reject(reason));
-      });
+      let contracted: Contract<TNext>;
+      var nextContract = new Contract<TNext>(
+        (resolve, reject) => {
+          this.then((value) => contracted = next(value))
+            .then((value) => resolve(value), (reason) => reject(reason));
+        }, {
+          revert: (status) => {
+            if (!(contracted instanceof Contract))
+              return;
+            switch (status) {
+              case "resolved": contracted.finish(null);
+              case "rejected": contracted.cancel(null);
+              case "invalidated": contracted.invalidate();
+                break;
+            }
+          }
+        });
       nextContract.previous = this;
       return nextContract;
     }
