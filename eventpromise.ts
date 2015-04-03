@@ -27,23 +27,23 @@ SOFTWARE.
 module EventPromise {
   export function waitEvent<T extends Event>(target: EventTarget, eventName: string) {
     let eventListener: (evt: T) => void;
-    return new Contract<T>({
-      init: (resolve, reject) => {
+    return new Contract<T>(
+      (resolve, reject) => {
         eventListener = (evt: T) => resolve(evt);
         target.addEventListener(eventName, eventListener);
-      },
-      revert: () => target.removeEventListener(eventName, eventListener)
-    });
+      }, {
+        revert: () => target.removeEventListener(eventName, eventListener)
+      });
   }
 
   export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (evt: T, contract: Contract<any>) => any) {
     let eventListener = (evt: T) => listener.call(target, evt, contract);
-    var contract = new Contract<T>({
-      init: (resolve, reject) => {
+    var contract = new Contract<T>(
+      (resolve, reject) => {
         target.addEventListener(eventName, eventListener);
-      },
-      revert: () => target.removeEventListener(eventName, eventListener)
-    });
+      }, {
+        revert: () => target.removeEventListener(eventName, eventListener)
+      });
     return contract;
   }
   // TODO: Reimplement waitEvent and subscribeEvent using Contract

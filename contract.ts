@@ -58,9 +58,11 @@ module EventPromise {
     cancel: (error: any) => void;
     invalidate: () => void;
     
-    constructor({init, revert}: ContractEntrance<T>) {
+    constructor(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options: ContractOptionBag<T> = {}) {
       let resolver: (value?: T | Promise<T>) => void;
       let rejector: (reason?: any) => void;
+
+      let {revert} = options;
       
       var chainedRevert = () => {
         if (newThis.previous)
@@ -107,11 +109,11 @@ module EventPromise {
     }
 
     chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext> {
-      var nextContract = new Contract<TNext>({
-        init: (resolve, reject) => {
-          this.then((value) => next(value))
-            .then((value) => resolve(value), (reason) => reject(reason));
-        }
+      // ISSUE 1: Two Contract objects here will not always have same status while they should.
+      // ISSUE 2: .invalidate() within constructor will not run chainedRevert()
+      var nextContract = new Contract<TNext>((resolve, reject) => {
+        this.then((value) => next(value))
+          .then((value) => resolve(value), (reason) => reject(reason));
       });
       nextContract.previous = this;
       return nextContract;
@@ -136,16 +138,14 @@ interface ContractControl<T> {
     reject(reason?: any): void;
     forget(): void;
 }
-interface ContractEntrance<T> {
-  /** Initiating listener for a contract. */
-  init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void;
+interface ContractOptionBag<T> {
   /** Reverting listener for a contract. This will always be called after a contract gets finished in any status. */
   revert?: (status: string) => void;
 }
 
 interface ContractConstructor {
-    prototype: Contract<any>;
-    new <T>(entrance: ContractEntrance<T>): Contract<T>;
+  prototype: Contract<any>;
+  new <T>(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options: ContractOptionBag<T>): Contract<T>;
 }
 
 var Contract: ContractConstructor = EventPromise.Contract;

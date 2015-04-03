@@ -21,7 +21,7 @@ declare module EventPromise {
         finish: (value: T | Promise<T>) => void;
         cancel: (error: any) => void;
         invalidate: () => void;
-        constructor(_0: ContractEntrance<T>);
+        constructor(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options?: ContractOptionBag<T>);
         chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
     }
 }
@@ -40,15 +40,13 @@ interface ContractControl<T> {
     reject(reason?: any): void;
     forget(): void;
 }
-interface ContractEntrance<T> {
-    /** Initiating listener for a contract. */
-    init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void;
+interface ContractOptionBag<T> {
     /** Reverting listener for a contract. This will always be called after a contract gets finished in any status. */
     revert?: (status: string) => void;
 }
 interface ContractConstructor {
     prototype: Contract<any>;
-    new <T>(entrance: ContractEntrance<T>): Contract<T>;
+    new <T>(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options: ContractOptionBag<T>): Contract<T>;
 }
 declare var Contract: ContractConstructor;
 declare module EventPromise {

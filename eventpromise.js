@@ -44,76 +44,54 @@ var EventPromise;
     _Temp.Promise = Promise;
     var Contract = (function (_super) {
         __extends(Contract, _super);
-        function Contract(_a) {
-            var init = _a.init, revert = _a.revert;
+        function Contract(init, options) {
+            if (options === void 0) { options = {}; }
             var resolver;
             var rejector;
+            var revert = options.revert;
             var chainedRevert = function () {
                 if (newThis.previous)
                     newThis.previous.invalidate();
                 singleRevert();
             };
             var singleRevert = function () {
+                breakMethods();
                 if (revert)
                     revert(newThis.status);
                 revert = null;
             };
             var changeStatusDelayed = function (status) {
-                var change = function () {
-                    return newThis.status = status;
-                };
+                var change = function () { return newThis.status = status; };
                 newThis ? change() : Promise.resolve().then(change);
+            };
+            var breakMethods = function () {
+                newThis.finish = newThis.cancel = newThis.invalidate = function () { };
             };
             var listener = function (resolve, reject) {
                 resolver = resolve;
                 rejector = reject;
-                init(function (value) {
-                    changeStatusDelayed("resolved");
-                    singleRevert();
-                    resolve(value);
-                }, function (reason) {
-                    changeStatusDelayed("rejected");
-                    singleRevert();
-                    reject(reason);
-                });
+                init(function (value) { changeStatusDelayed("resolved"); singleRevert(); resolve(value); }, function (reason) { changeStatusDelayed("rejected"); singleRevert(); reject(reason); });
             };
             var subclassj = !!window.SubclassJ && SubclassJ.required;
-            var newThis = subclassj ? SubclassJ.getNewThis(Contract, Promise, [
-                listener
-            ]) : this;
+            var newThis = subclassj ? SubclassJ.getNewThis(Contract, Promise, [listener]) : this;
             if (!subclassj)
                 _super.call(this, listener);
             newThis.status = "unresolved";
-            newThis.finish = function (value) {
-                newThis.status = "resolved";
-                chainedRevert();
-                resolver(value);
-            };
-            newThis.cancel = function (error) {
-                newThis.status = "rejected";
-                chainedRevert();
-                rejector(error);
-            };
+            newThis.finish = function (value) { newThis.status = "resolved"; chainedRevert(); resolver(value); };
+            newThis.cancel = function (error) { newThis.status = "rejected"; chainedRevert(); rejector(error); };
             newThis.invalidate = function () {
                 newThis.status = "invalidated";
-                newThis.finish = newThis.cancel = function () {
-                };
                 chainedRevert();
             };
             return newThis;
         }
         Contract.prototype.chain = function (next) {
             var _this = this;
-            var nextContract = new Contract({
-                init: function (resolve, reject) {
-                    _this.then(function (value) {
-                        return next(value);
-                    }).then(function (value) {
-                        return resolve(value);
-                    }, function (reason) {
-                        return reject(reason);
-                    });
-                }
+            // ISSUE 1: Two Contract objects here will not always have same status while they should.
+            // ISSUE 2: .invalidate() within constructor will not run chainedRevert()
+            var nextContract = new Contract(function (resolve, reject) {
+                _this.then(function (value) { return next(value); })
+                    .then(function (value) { return resolve(value); }, function (reason) { return reject(reason); });
             });
             nextContract.previous = this;
             return nextContract;
@@ -152,30 +130,20 @@ var EventPromise;
 (function (EventPromise) {
     function waitEvent(target, eventName) {
         var eventListener;
-        return new EventPromise.Contract({
-            init: function (resolve, reject) {
-                eventListener = function (evt) {
-                    return resolve(evt);
-                };
-                target.addEventListener(eventName, eventListener);
-            },
-            revert: function () {
-                return target.removeEventListener(eventName, eventListener);
-            }
+        return new EventPromise.Contract(function (resolve, reject) {
+            eventListener = function (evt) { return resolve(evt); };
+            target.addEventListener(eventName, eventListener);
+        }, {
+            revert: function () { return target.removeEventListener(eventName, eventListener); }
         });
     }
     EventPromise.waitEvent = waitEvent;
     function subscribeEvent(target, eventName, listener) {
-        var eventListener = function (evt) {
-            return listener.call(target, evt, contract);
-        };
-        var contract = new EventPromise.Contract({
-            init: function (resolve, reject) {
-                target.addEventListener(eventName, eventListener);
-            },
-            revert: function () {
-                return target.removeEventListener(eventName, eventListener);
-            }
+        var eventListener = function (evt) { return listener.call(target, evt, contract); };
+        var contract = new EventPromise.Contract(function (resolve, reject) {
+            target.addEventListener(eventName, eventListener);
+        }, {
+            revert: function () { return target.removeEventListener(eventName, eventListener); }
         });
         return contract;
     }
