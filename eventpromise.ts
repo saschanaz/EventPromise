@@ -22,77 +22,30 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
+///<reference path="contract.ts" />
+
 module EventPromise {
-    export function waitEvent<T extends Event>(target: EventTarget, eventName: string) {
-        return new Promise<T>((resolve, reject) => {
-            var eventListener = (event: T) => {
-                target.removeEventListener(eventName, eventListener);
-                resolve(event);
-            };
-            target.addEventListener(eventName, eventListener);
-        });
-    }
+  export function waitEvent<T extends Event>(target: EventTarget, eventName: string) {
+    let eventListener: (evt: T) => void;
+    return new Contract<T>(
+      (resolve, reject) => {
+        eventListener = (evt: T) => resolve(evt);
+        target.addEventListener(eventName, eventListener);
+      }, {
+        revert: () => target.removeEventListener(eventName, eventListener)
+      });
+  }
 
-    export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
-        var base = createSubscriptionBase(target, eventName, listener);
-        target.addEventListener(eventName, base.eventListener);
-        return base.subscription;
-    }
-
-    export function subscribeBlank() {
-        var subscription = createChainableBase();
-        subscription.cease = (options: EventCessationOptions) => { };
-        subscription.cessation = Promise.resolve();
-        return subscription;
-    }
-
-    function createSubscriptionBase<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
-        var oncessation: () => void;
-        var onerror: (error: any) => void;
-        var subscription = createChainableBase();
-        subscription.cease = (options: EventCessationOptions = {}) => {
-            if (subscription.previous)
-                subscription.previous.cease({ silently: true });
-            target.removeEventListener(eventName, eventListener);
-            if (options.error)
-                onerror(options.error);
-            else if (!options.silently)
-                oncessation();
-        };
-        subscription.cessation = new Promise<void>((resolve, reject) => {
-            oncessation = () => resolve();
-            onerror = (error) => reject(error);
-        });
-
-        var eventListener = (event: T) => {
-            listener.call(target, event, subscription);
-        };
-        return { subscription, eventListener };
-    }
-
-    function createChainableBase(): EventSubscription {
-        var chainable: EventSubscription = {
-            cease: null,
-            cessation: null,
-            chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any) {
-                var chained = createSubscriptionBase(target, eventName, listener);
-                chainable.cessation.then(() => target.addEventListener(eventName, chained.eventListener));
-                chained.subscription.previous = chainable;
-                return chained.subscription;
-            }
-        };
-        return chainable;
-    }
-
-    export interface EventSubscription {
-        previous?: EventSubscription;
-        cease(options?: EventCessationOptions): void;
-        cessation: Promise<void>;
-        chain<T extends Event>(target: EventTarget, eventName: string, listener: (ev: T, subscription: EventSubscription) => any): EventSubscription;
-    }
-
-    export interface EventCessationOptions {
-        silently?: boolean;
-        error?: any;
-    }
+  export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (evt: T, contract: Contract<any>) => any) {
+    let eventListener = (evt: T) => listener.call(target, evt, contract);
+    var contract = new Contract<T>(
+      (resolve, reject) => {
+        target.addEventListener(eventName, eventListener);
+      }, {
+        revert: () => target.removeEventListener(eventName, eventListener)
+      });
+    return contract;
+  }
+  // TODO: Reimplement waitEvent and subscribeEvent using Contract
 }
+//new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });
