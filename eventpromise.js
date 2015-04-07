@@ -27,7 +27,6 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-///<reference path="submodules/subclassj/subclassj.d.ts" />
 // Modified for Win10 10041 EdgeHTML bug workaround
 var __extends = function (d, b) {
     for (var p in b)

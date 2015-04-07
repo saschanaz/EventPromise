@@ -22,8 +22,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-///<reference path="submodules/subclassj/subclassj.d.ts" />
-
 // Modified for Win10 10041 EdgeHTML bug workaround
 var __extends = function (d: any, b: any) {
   for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
@@ -130,10 +128,6 @@ module EventPromise {
       return nextContract;
     }
   }
-}
-
-interface Window {
-  SubclassJ: typeof SubclassJ;
 }
 
 interface Contract<T> extends Promise<T> {

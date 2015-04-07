@@ -1,4 +1,3 @@
-/// <reference path="submodules/subclassj/subclassj.d.ts" />
 declare var __extends: (d: any, b: any) => void;
 declare module EventPromise {
     module _Temp {
@@ -24,9 +23,6 @@ declare module EventPromise {
         constructor(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options?: ContractOptionBag<T>);
         chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
     }
-}
-interface Window {
-    SubclassJ: typeof SubclassJ;
 }
 interface Contract<T> extends Promise<T> {
     previous?: Contract<any>;

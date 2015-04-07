@@ -6,6 +6,7 @@
         "out": "eventpromise.js"
     },
     "files": [
+        "submodules/subclassj/subclassj.d.ts",
         "contract.ts",
         "eventpromise.ts"
     ]
