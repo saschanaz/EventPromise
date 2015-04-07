@@ -42,7 +42,7 @@ interface ContractOptionBag<T> {
 }
 interface ContractConstructor {
     prototype: Contract<any>;
-    new <T>(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options: ContractOptionBag<T>): Contract<T>;
+    new <T>(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options?: ContractOptionBag<T>): Contract<T>;
 }
 declare var Contract: ContractConstructor;
 declare module EventPromise {
