@@ -48,6 +48,11 @@ module EventPromise {
   }
   (<any>_Temp).Promise = Promise;
 
+  function Arrayfrom<T>(arrayLike: ArrayLike<T>) {
+    return <T[]>Array.prototype.map.call(arguments, (v: any) => v)
+  }
+  
+
   export class Contract<T> extends _Temp.Promise<T> {
     previous: Contract<any>;
     status: string;
@@ -135,12 +140,41 @@ module EventPromise {
     }
 
     static resolve(): Contract<void>;
-    static resolve<T>(value?: T | Promise<T>): Contract<T>;
-    static resolve<T>(value?: T | Promise<T>): Contract<any> {
-      if (arguments.length === 0)
-        return new Contract<void>((resolve, reject) => resolve());
-      else
-        return new Contract<T>((resolve, reject) => resolve(value));
+    static resolve<T>(value: T | Promise<T>): Contract<T>;
+    static resolve<T>(value?: T | Promise<T>) {
+      let args = arguments;
+      return new Contract<any>((resolve, reject) => (<any>resolve)(...Arrayfrom(args)));
+    }
+
+    static reject(reason: any): Contract<void>;
+    static reject<T>(reason: any): Contract<T>;
+    static reject(reason: any) {
+      let args = arguments;
+      return new Contract<any>((resolve, reject) => reject(reason));
+    }
+
+    static all(values: Promise<void>[]): Contract<void>;
+    static all<T>(values: (T | Promise<T>)[]): Contract<T[]>;
+    static all<T>(values: (T | Promise<T>)[]) {
+      return new Contract<any>(
+        (resolve, reject) => Promise.all(values).then((results) => resolve(results), (reason) => reject(reason)), {
+          revert: (status) => {
+            for (let value of values)
+              if (value instanceof Contract)
+                Contract._chainByStatus(value, status);
+          }
+        });
+    }
+
+    static race<T>(values: (T | Promise<T>)[]) {
+      return new Contract<T>(
+        (resolve, reject) => Promise.race(values).then((result) => resolve(result), (reason) => reject(reason)), {
+          revert: (status) => {
+            for (let value of values)
+              if (value instanceof Contract)
+                Contract._chainByStatus(value, status);
+          }
+        });
     }
   }
 }

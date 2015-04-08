@@ -21,7 +21,15 @@ declare module EventPromise {
         cancel: (error: any) => void;
         invalidate: () => void;
         constructor(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options?: ContractOptionBag<T>);
-        chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
+        private static _chainByStatus(parent, status);
+        chain<TNext>(next: (value: T) => TNext | Promise<TNext>): Contract<TNext>;
+        static resolve(): Contract<void>;
+        static resolve<T>(value: T | Promise<T>): Contract<T>;
+        static reject(reason: any): Contract<void>;
+        static reject<T>(reason: any): Contract<T>;
+        static all(values: Promise<void>[]): Contract<void>;
+        static all<T>(values: (T | Promise<T>)[]): Contract<T[]>;
+        static race<T>(values: (T | Promise<T>)[]): Contract<T>;
     }
 }
 interface Contract<T> extends Promise<T> {

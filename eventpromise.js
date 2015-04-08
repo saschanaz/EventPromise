@@ -41,6 +41,9 @@ var EventPromise;
     (function (_Temp) {
     })(_Temp = EventPromise._Temp || (EventPromise._Temp = {}));
     _Temp.Promise = Promise;
+    function Arrayfrom(arrayLike) {
+        return Array.prototype.map.call(arguments, function (v) { return v; });
+    }
     var Contract = (function (_super) {
         __extends(Contract, _super);
         function Contract(init, options) {
@@ -59,6 +62,8 @@ var EventPromise;
                     revert(newThis.status);
                 revert = null;
             };
+            // "Synchronous" listeners tries to change status right away but SubclassJ disables it
+            // TODO: Save it in other variable and return newThis after change
             var changeStatusDelayed = function (status) {
                 var change = function () { return newThis.status = status; };
                 newThis ? change() : Promise.resolve().then(change);
@@ -84,6 +89,19 @@ var EventPromise;
             };
             return newThis;
         }
+        Contract._chainByStatus = function (parent, status) {
+            switch (status) {
+                case "resolved":
+                    parent.finish(null);
+                    break;
+                case "rejected":
+                    parent.cancel(null);
+                    break;
+                case "invalidated":
+                    parent.invalidate();
+                    break;
+            }
+        };
         Contract.prototype.chain = function (next) {
             var _this = this;
             var contracted;
@@ -92,19 +110,44 @@ var EventPromise;
                     .then(function (value) { return resolve(value); }, function (reason) { return reject(reason); });
             }, {
                 revert: function (status) {
-                    if (!(contracted instanceof Contract))
-                        return;
-                    switch (status) {
-                        case "resolved": contracted.finish(null);
-                        case "rejected": contracted.cancel(null);
-                        case "invalidated":
-                            contracted.invalidate();
-                            break;
-                    }
+                    // Chaining works only when a Contract was received.
+                    // A Promise is a "revert-less" Contract here, so no problem.
+                    if (contracted instanceof Contract)
+                        Contract._chainByStatus(contracted, status);
                 }
             });
             nextContract.previous = this;
             return nextContract;
+        };
+        Contract.resolve = function (value) {
+            var args = arguments;
+            return new Contract(function (resolve, reject) { return resolve.apply(void 0, Arrayfrom(args)); });
+        };
+        Contract.reject = function (reason) {
+            var args = arguments;
+            return new Contract(function (resolve, reject) { return reject(reason); });
+        };
+        Contract.all = function (values) {
+            return new Contract(function (resolve, reject) { return Promise.all(values).then(function (results) { return resolve(results); }, function (reason) { return reject(reason); }); }, {
+                revert: function (status) {
+                    for (var _i = 0; _i < values.length; _i++) {
+                        var value = values[_i];
+                        if (value instanceof Contract)
+                            Contract._chainByStatus(value, status);
+                    }
+                }
+            });
+        };
+        Contract.race = function (values) {
+            return new Contract(function (resolve, reject) { return Promise.race(values).then(function (result) { return resolve(result); }, function (reason) { return reject(reason); }); }, {
+                revert: function (status) {
+                    for (var _i = 0; _i < values.length; _i++) {
+                        var value = values[_i];
+                        if (value instanceof Contract)
+                            Contract._chainByStatus(value, status);
+                    }
+                }
+            });
         };
         return Contract;
     })(_Temp.Promise);
