@@ -185,12 +185,7 @@ interface Contract<T> extends Promise<T> {
     finish(value?: T): void;
     cancel(reason?: any): void;
     invalidate(): void;
-    chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext>;
-}
-interface ContractControl<T> {
-    resolve(value?: T | Promise<T>): void;
-    reject(reason?: any): void;
-    forget(): void;
+    chain<TNext>(next: (value: T) => TNext | Promise<TNext>): Contract<TNext>;
 }
 interface ContractOptionBag<T> {
   /** Reverting listener for a contract. This will always be called after a contract gets finished in any status. */
