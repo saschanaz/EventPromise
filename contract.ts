@@ -73,6 +73,8 @@ module EventPromise {
           revert(newThis.status);
         revert = null;
       }
+      // "Synchronous" listeners tries to change status right away but SubclassJ disables it
+      // TODO: Save it in other variable and return newThis after change
       var changeStatusDelayed = (status: string) => {
         var change = () => newThis.status = status;
         newThis ? change() : Promise.resolve().then(change);
@@ -106,26 +108,39 @@ module EventPromise {
       return newThis;
     }
 
-    chain<TNext>(next: (value: T) => Contract<TNext>): Contract<TNext> {
-      let contracted: Contract<TNext>;
+    private static _chainByStatus(parent: Contract<any>, status: string) {
+      switch (status) {
+        case "resolved": parent.finish(null); break;
+        case "rejected": parent.cancel(null); break;
+        case "invalidated": parent.invalidate(); break;
+      }
+    }
+
+    chain<TNext>(next: (value: T) => TNext | Promise<TNext>): Contract<TNext> {
+      let contracted: TNext | Promise<TNext>;
       var nextContract = new Contract<TNext>(
         (resolve, reject) => {
           this.then((value) => contracted = next(value))
             .then((value) => resolve(value), (reason) => reject(reason));
         }, {
           revert: (status) => {
-            if (!(contracted instanceof Contract))
-              return;
-            switch (status) {
-              case "resolved": contracted.finish(null);
-              case "rejected": contracted.cancel(null);
-              case "invalidated": contracted.invalidate();
-                break;
-            }
+            // Chaining works only when a Contract was received.
+            // A Promise is a "revert-less" Contract here, so no problem.
+            if (contracted instanceof Contract)
+              Contract._chainByStatus(contracted, status);
           }
         });
       nextContract.previous = this;
       return nextContract;
+    }
+
+    static resolve(): Contract<void>;
+    static resolve<T>(value?: T | Promise<T>): Contract<T>;
+    static resolve<T>(value?: T | Promise<T>): Contract<any> {
+      if (arguments.length === 0)
+        return new Contract<void>((resolve, reject) => resolve());
+      else
+        return new Contract<T>((resolve, reject) => resolve(value));
     }
   }
 }
