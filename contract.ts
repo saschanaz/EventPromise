@@ -200,6 +200,14 @@ interface ContractOptionBag<T> {
 interface ContractConstructor {
   prototype: Contract<any>;
   new <T>(init: (resolve: (value?: T | Promise<T>) => void, reject: (reason?: any) => void) => void, options?: ContractOptionBag<T>): Contract<T>;
+
+  all<T>(values: (T | Promise<T>)[]): Contract<T[]>;
+  all(values: Promise<void>[]): Contract<void>;
+  race<T>(values: (T | Promise<T>)[]): Contract<T>;
+  reject(reason: any): Contract<void>;
+  reject<T>(reason: any): Contract<T>;
+  resolve<T>(value: T | Promise<T>): Contract<T>;
+  resolve(): Contract<void>;
 }
 
 var Contract: ContractConstructor = EventPromise.Contract;
