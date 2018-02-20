@@ -22,30 +22,24 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-///<reference path="contract.ts" />
-
 module EventPromise {
   export function waitEvent<T extends Event>(target: EventTarget, eventName: string) {
-    let eventListener: (evt: T) => void;
-    return new Contract<T>(
-      (resolve, reject) => {
-        eventListener = (evt: T) => resolve(evt);
+    return CancelablePromise.cancelable<T>(chain => {
+      let eventListener: (evt: T) => void;
+      chain.tillCanceled.then(() => target.removeEventListener(eventName, eventListener));
+      return new Promise<T>(resolve => {
+        eventListener = resolve;
         target.addEventListener(eventName, eventListener);
-      }, {
-        revert: () => target.removeEventListener(eventName, eventListener)
       });
+    });
   }
 
-  export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (evt: T, contract: Contract<any>) => any) {
-    let eventListener = (evt: T) => listener.call(target, evt, contract);
-    var contract = new Contract<T>(
-      (resolve, reject) => {
-        target.addEventListener(eventName, eventListener);
-      }, {
-        revert: () => target.removeEventListener(eventName, eventListener)
-      });
-    return contract;
+  export function subscribeEvent<T extends Event>(target: EventTarget, eventName: string, listener: (evt: T, contract: CancelablePromise<any>) => any) {
+    const eventListener = (evt: T) => listener(evt, cancelable);
+    const cancelable = CancelablePromise.cancelable(chain => {
+      chain.tillCanceled.then(() => target.removeEventListener(eventName, eventListener));
+      target.addEventListener(eventName, eventListener);
+    });
+    return cancelable;
   }
-  // TODO: Reimplement waitEvent and subscribeEvent using Contract
 }
-//new Contract<number>({ init: (resolve, reject) => { }, revert: () => { } });

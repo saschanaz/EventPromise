@@ -3,11 +3,11 @@
         "noImplicitAny": true,
         "sourceMap": true,
         "declaration": true,
+        "target": "es2015",
         "out": "eventpromise.js"
     },
     "files": [
-        "submodules/subclassj/subclassj.d.ts",
-        "contract.ts",
+        "node_modules/sn-cancelable/lib/global/cancelable.d.ts",
         "eventpromise.ts"
     ]
 }

@@ -1,0 +1,26 @@
+{
+  "name": "eventpromise",
+  "version": "1.0.0",
+  "description": "Listen events more easily with Promises.",
+  "main": "eventpromise.js",
+  "dependencies": {},
+  "devDependencies": {
+    "sn-cancelable": "^0.2.0"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saschanaz/EventPromise.git"
+  },
+  "keywords": [
+    "promise"
+  ],
+  "author": "Kagami Sascha Rosylight <saschanaz@outlook.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/saschanaz/EventPromise/issues"
+  },
+  "homepage": "https://github.com/saschanaz/EventPromise#readme"
+}
