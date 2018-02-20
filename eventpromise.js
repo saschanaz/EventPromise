@@ -39,6 +39,7 @@ var EventPromise;
         const cancelable = CancelablePromise.cancelable(chain => {
             chain.tillCanceled.then(() => target.removeEventListener(eventName, eventListener));
             target.addEventListener(eventName, eventListener);
+            return new Promise(() => { });
         });
         return cancelable;
     }
